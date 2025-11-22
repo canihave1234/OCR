@@ -255,7 +255,7 @@ public class ocrServer {
 
         File out = new File("/app/preprocessed.png");
         ImageIO.write(scaled, "png", out);
-        System.out.println("📷 Preprocessed: " + newW + "x" + newH);
+        System.out.println("Preprocessed: " + newW + "x" + newH);
         return out;
     }
 

@@ -18,10 +18,13 @@ public class ocrServer {
 
     public static void main(String[] args) throws Exception {
 
-//        HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
-    	int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-    	HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
+        HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 
+        System.out.println("🚀 Server starting on port: " + port);
+
+        // ⭐ 서버 시작 시 DB 파일 없으면 바로 생성
+        initDB();
 
         /* ------------------------ 1) Serve camera.html ------------------------ */
         server.createContext("/", exchange -> {
@@ -50,10 +53,8 @@ public class ocrServer {
                 exchange.close();
             }
         });
-     
 
-        
-        /* add function*/
+        /* ------------------------ 3) DB JSON ------------------------ */
         server.createContext("/db-json", exchange -> {
             try {
                 String json = getDbJson();
@@ -70,8 +71,7 @@ public class ocrServer {
             }
         });
 
-
-        /* ------------------------ 3) Delete Row ------------------------ */
+        /* ------------------------ 4) Delete Row ------------------------ */
         server.createContext("/delete", exchange -> {
             try {
                 String q = exchange.getRequestURI().getQuery(); // id=3
@@ -88,32 +88,27 @@ public class ocrServer {
             exchange.close();
         });
 
-        /* ------------------------ 4) Upload Base64 + memo ------------------------ */
+        /* ------------------------ 5) Upload Base64 + memo ------------------------ */
         server.createContext("/uploadBase64", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
 
-                System.out.println("Received upload!");
-
                 String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
 
-                // safer JSON extraction
                 String base64 = extract(body, "image")
                         .replace("data:image/png;base64,", "")
                         .trim();
 
                 String memo = extract(body, "memo");
 
-                // Save image
                 byte[] imgBytes = Base64.getDecoder().decode(base64);
-               // Path path = Paths.get("uploaded.png");
-                Path path = Paths.get("/app/uploaded.png");
-                Files.write(path, imgBytes);
 
-                System.out.println("Saved: " + path.toAbsolutePath());
+                Files.write(Paths.get(getAppPath() + "/uploaded.png"), imgBytes);
+
+                System.out.println("📸 Saved image!");
 
                 // OCR
-                String result = runOCR(path.toFile());
-                System.out.println("OCR RESULT = " + result);
+                String result = runOCR(new File(getAppPath() + "/uploaded.png"));
+                System.out.println("🔍 OCR result: " + result);
 
                 // Save DB
                 saveToDB(result, memo);
@@ -128,44 +123,48 @@ public class ocrServer {
         });
 
         server.start();
-        System.out.println("Server running on http://localhost:8080/");
+        System.out.println("🎉 Server running!");
     }
 
     /* =======================================================================
                                Utility Functions
     ======================================================================== */
 
-    private static String getDbJson() throws Exception {
-      //  Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
-    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
-        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
-
-        StringBuilder json = new StringBuilder("[");
-        boolean first = true;
-
-        while (rs.next()) {
-            if (!first) json.append(",");
-            json.append("{")
-                .append("\"id\":").append(rs.getInt("id")).append(",")
-                .append("\"text\":\"").append(rs.getString("text")).append("\",")
-                .append("\"memo\":\"").append(rs.getString("memo")).append("\",")
-                .append("\"created_at\":\"").append(rs.getString("created_at")).append("\"")
-                .append("}");
-            first = false;
-        }
-
-        json.append("]");
-
-        rs.close();
-        conn.close();
-
-        return json.toString();
+    /** Local vs Server path 자동 구분 */
+    private static String getAppPath() {
+        String env = System.getenv("RAILWAY_ENVIRONMENT");
+        if (env != null && env.length() > 0) return "/app"; // 서버
+        return "."; // 로컬
     }
 
-    
-    
-    
-    /** Extract a JSON field manually */
+    private static String getDbPath() {
+        String env = System.getenv("RAILWAY_ENVIRONMENT");
+        if (env != null && env.length() > 0) return "/app/data.db";
+        return "data.db";
+    }
+
+    /** 서버 시작 시 DB 생성 */
+    private static void initDB() {
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath())) {
+
+            String sql =
+                    "CREATE TABLE IF NOT EXISTS deposits (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                            "text TEXT," +
+                            "memo TEXT," +
+                            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP" +
+                            ");";
+
+            conn.createStatement().execute(sql);
+
+            System.out.println("📁 DB initialized: " + getDbPath());
+
+        } catch (Exception e) {
+            System.out.println("❌ DB init error");
+        }
+    }
+
+    /** JSON Extractor */
     private static String extract(String json, String field) {
         try {
             String key = "\"" + field + "\":\"";
@@ -178,22 +177,19 @@ public class ocrServer {
             return "";
         }
     }
-    
-    
-    /** add function */
+
+    /** OCR Preprocessing (contrast boost) */
     private static File preprocessImage(File input) throws Exception {
         BufferedImage img = ImageIO.read(input);
 
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // Grayscale + contrast boost
         BufferedImage gray = new BufferedImage(w, h, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g = gray.createGraphics();
         g.drawImage(img, 0, 0, null);
         g.dispose();
 
-        // Contrast stretching (간단한 histogram 방식)
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int pixel = gray.getRGB(x, y) & 0xFF;
@@ -203,51 +199,32 @@ public class ocrServer {
             }
         }
 
-        // Save enhanced file
-        File out = new File("preprocessed.png");
+        File out = new File(getAppPath() + "/preprocessed.png");
         ImageIO.write(gray, "png", out);
-
         return out;
     }
-
 
     /** OCR Logic */
     private static String runOCR(File img) {
         try {
-            System.setProperty("jna.library.path", "/usr/local/lib:/usr/local/Cellar/tesseract/5.5.1/lib");
-
             File clean = preprocessImage(img);
-            
-            Tesseract t = new Tesseract();  
-            t.setDatapath("/usr/local/share/tessdata");
+
+            Tesseract t = new Tesseract();
+            t.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata");
             t.setLanguage("eng");
             t.setPageSegMode(7);
             t.setTessVariable("tessedit_char_whitelist", "0123456789");
 
-            return t.doOCR(img).trim();
+            return t.doOCR(clean).trim();
 
         } catch (Exception e) {
-            System.out.println("⚠ OCR ERROR");
             return "OCR_ERROR";
         }
     }
 
-    /** Create & Insert SQLite */
+    /** Insert to DB */
     private static void saveToDB(String text, String memo) {
-        try {
-            //Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
-        	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
-
-
-            // Re-create table always safely (id, text, memo, created_at)
-            String createSQL =
-                    "CREATE TABLE IF NOT EXISTS deposits (" +
-                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                            "text TEXT," +
-                            "memo TEXT," +
-                            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP" +
-                            ");";
-            conn.createStatement().execute(createSQL);
+        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath())) {
 
             PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO deposits(text, memo) VALUES(?, ?)"
@@ -256,20 +233,16 @@ public class ocrServer {
             ps.setString(2, memo);
             ps.executeUpdate();
 
-            System.out.println("DB Saved!");
-
-            ps.close();
-            conn.close();
+            System.out.println("💾 Saved to DB");
 
         } catch (Exception e) {
-            System.out.println("⚠ DB ERROR");
-            e.printStackTrace();
+            System.out.println("❌ DB save error");
         }
     }
 
+    /** Delete */
     private static void deleteById(int id) throws Exception {
-      //  Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
-    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath());
         PreparedStatement ps = conn.prepareStatement("DELETE FROM deposits WHERE id=?");
         ps.setInt(1, id);
         ps.executeUpdate();
@@ -277,37 +250,69 @@ public class ocrServer {
         conn.close();
     }
 
-    /** Build DB view page */
-    private static String buildDbPage() throws Exception {
+    /** Convert DB → JSON */
+    private static String getDbJson() throws Exception {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath());
+        ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
 
-        //Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
-    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
+        StringBuilder json = new StringBuilder("[");
+        boolean first = true;
+
+        while (rs.next()) {
+            if (!first) json.append(",");
+            json.append("{")
+                    .append("\"id\":").append(rs.getInt("id")).append(",")
+                    .append("\"text\":\"").append(rs.getString("text")).append("\",")
+                    .append("\"memo\":\"").append(rs.getString("memo")).append("\",")
+                    .append("\"created_at\":\"").append(rs.getString("created_at")).append("\"")
+                    .append("}");
+            first = false;
+        }
+
+        json.append("]");
+
+        rs.close();
+        conn.close();
+
+        return json.toString();
+    }
+
+
+    /** DB HTML Page */
+    private static String buildDbPage() throws Exception {
+        Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath());
         ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
 
         StringBuilder html = new StringBuilder();
+
+
         html.append("<html><head>");
         html.append("<meta charset='UTF-8'>");
         html.append("<style>");
-        html.append("table{border-collapse:collapse;width:90%;margin:auto;}");
-        html.append("td,th{border:1px solid #888;padding:8px;text-align:center;}");
-        html.append("h2{text-align:center;}");
-        html.append("a.delete{color:red;font-weight:bold;}");
+        html.append("body { font-family: Arial; margin:20px; background:#f4f9f4; }");
+        html.append("table { border-collapse: collapse; width:95%; margin:auto; background:white; }");
+        html.append("td,th { border:1px solid #ccc; padding:10px; text-align:center; }");
+        html.append("th { background:#006644; color:white; }");
+        html.append("h2 { text-align:center; color:#006644; }");
+        html.append("a.delete { color:red; font-weight:bold; text-decoration:none; }");
+        html.append("a.delete:hover { color:#b30000; }");
         html.append("</style>");
         html.append("</head><body>");
-        html.append("<h2>OCR Records</h2>");
+
+        html.append("<h2>📄 OCR Deposit Records</h2>");
         html.append("<table>");
-        html.append("<tr><th>ID</th><th>OCR Text</th><th>Memo</th><th>Timestamp</th><th>Delete</th></tr>");
+        html.append("<tr><th>ID</th><th>OCR</th><th>Memo</th><th>Timestamp</th><th>Delete</th></tr>");
 
         while (rs.next()) {
             html.append("<tr>")
-                    .append("<td>").append(rs.getInt("id")).append("</td>")
-                    .append("<td>").append(rs.getString("text")).append("</td>")
-                    .append("<td>").append(rs.getString("memo")).append("</td>")
-                    .append("<td>").append(rs.getString("created_at")).append("</td>")
-                    .append("<td><a class='delete' href='/delete?id=")
-                    .append(rs.getInt("id"))
-                    .append("'>X</a></td>")
-                    .append("</tr>");
+                .append("<td>").append(rs.getInt("id")).append("</td>")
+                .append("<td>").append(rs.getString("text")).append("</td>")
+                .append("<td>").append(rs.getString("memo")).append("</td>")
+                .append("<td>").append(rs.getString("created_at")).append("</td>")
+                .append("<td><a class='delete' href='/delete?id=")
+                .append(rs.getInt("id"))
+                .append("'>❌</a></td>")
+                .append("</tr>");
         }
 
         html.append("</table></body></html>");

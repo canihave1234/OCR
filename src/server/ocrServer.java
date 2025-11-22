@@ -223,7 +223,7 @@ public class ocrServer {
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // 3배 확대 (더 크게!)
+        // 3배 확대
         int newW = w * 3;
         int newH = h * 3;
 
@@ -234,26 +234,22 @@ public class ocrServer {
         g.drawImage(img, 0, 0, newW, newH, null);
         g.dispose();
 
-        // 적응형 이진화 (더 정교한 threshold)
-        int[][] pixels = new int[newH][newW];
+        // 평균값 기반 적응형 threshold
         long sum = 0;
-        
         for (int y = 0; y < newH; y++) {
             for (int x = 0; x < newW; x++) {
-                pixels[y][x] = scaled.getRGB(x, y) & 0xFF;
-                sum += pixels[y][x];
+                sum += scaled.getRGB(x, y) & 0xFF;
             }
         }
-        
-        // 평균값 기반 threshold
-        int threshold = (int)(sum / (newW * newH)) - 20;
-        threshold = Math.max(80, Math.min(170, threshold));
-        
-        System.out.println("📊 Threshold: " + threshold);
+        int avg = (int)(sum / (newW * newH));
+        int threshold = Math.max(90, Math.min(160, avg - 10));
+        System.out.println("📊 Avg brightness: " + avg + ", Threshold: " + threshold);
 
+        // 이진화
         for (int y = 0; y < newH; y++) {
             for (int x = 0; x < newW; x++) {
-                int bw = pixels[y][x] < threshold ? 0 : 255;
+                int pixel = scaled.getRGB(x, y) & 0xFF;
+                int bw = pixel < threshold ? 0 : 255;
                 scaled.setRGB(x, y, (bw << 16) | (bw << 8) | bw);
             }
         }
@@ -264,7 +260,7 @@ public class ocrServer {
         return out;
     }
 
-    /** OCR - 개선 버전 */
+    
     private static String runOCR(File img) {
         try {
             File clean = preprocessImage(img);

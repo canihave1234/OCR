@@ -18,6 +18,8 @@ public class ocrServer {
 
     public static void main(String[] args) throws Exception {
 
+    	
+    	Class.forName("org.sqlite.JDBC");
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
 

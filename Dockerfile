@@ -12,6 +12,8 @@ RUN mkdir -p lib && \
 
 COPY . .
 
+ENV CLASSPATH=/app/lib/sqlite-jdbc.jar:/app/lib/tess4j.jar:out:.
+
 RUN javac -encoding UTF-8 \
     -cp "lib/tess4j.jar:lib/sqlite-jdbc.jar" \
     -d out src/server/ocrServer.java

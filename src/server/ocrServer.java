@@ -254,7 +254,7 @@ public class ocrServer {
             File clean = preprocessImage(img);
 
             Tesseract t = new Tesseract();
-            t.setDatapath("/usr/share/tesseract-ocr/4.00/tessdata/");
+            t.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
             t.setLanguage("eng");
             t.setPageSegMode(6);  // 단일 블록
             t.setOcrEngineMode(1);  // LSTM

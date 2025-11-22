@@ -22,9 +22,6 @@ RUN curl -L -o lib/slf4j-simple.jar \
 
 COPY . .
 
-# tessdata 경로 확인용
-RUN echo "=== Tessdata 위치 ===" && find /usr -name "tessdata" -type d
-
 RUN mkdir -p out && \
     javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
 

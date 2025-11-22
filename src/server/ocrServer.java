@@ -1,4 +1,4 @@
- package server;
+package server;
 
 import com.sun.net.httpserver.*;
 import net.sourceforge.tess4j.Tesseract;

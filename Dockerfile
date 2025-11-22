@@ -19,10 +19,6 @@ COPY . .
 RUN mkdir -p out && \
     javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
 
-# 시작 스크립트 생성
-RUN echo '#!/bin/bash\njava -cp "out:lib/tess4j.jar:lib/sqlite-jdbc.jar" server.ocrServer' > start.sh && \
-    chmod +x start.sh
-
-CMD ["./start.sh"]
+CMD ["/bin/bash", "-c", "echo '=== 현재 위치 ===' && pwd && echo '=== out 폴더 ===' && ls -laR out/ && echo '=== lib 폴더 ===' && ls -la lib/ && echo '=== 실행 시도 ===' && java -cp out:lib/tess4j.jar:lib/sqlite-jdbc.jar server.ocrServer"]
 
 EXPOSE 8080

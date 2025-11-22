@@ -14,7 +14,6 @@ RUN curl -L -o lib/tess4j.jar \
 RUN curl -L -o lib/sqlite-jdbc.jar \
     https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar
 
-# slf4j 추가!
 RUN curl -L -o lib/slf4j-api.jar \
     https://repo1.maven.org/maven2/org/slf4j/slf4j-api/2.0.9/slf4j-api-2.0.9.jar
 
@@ -22,6 +21,9 @@ RUN curl -L -o lib/slf4j-simple.jar \
     https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/2.0.9/slf4j-simple-2.0.9.jar
 
 COPY . .
+
+# tessdata 경로 확인용
+RUN echo "=== Tessdata 위치 ===" && find /usr -name "tessdata" -type d
 
 RUN mkdir -p out && \
     javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java

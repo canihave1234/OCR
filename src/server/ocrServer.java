@@ -217,27 +217,43 @@ public class ocrServer {
     }
 
     /** 이미지 전처리 - 개선 버전 */
+    /** 이미지 전처리 - 강화 버전 */
     private static File preprocessImage(File input) throws Exception {
         BufferedImage img = ImageIO.read(input);
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // 2배 확대
-        int newW = w * 2;
-        int newH = h * 2;
+        // 3배 확대 (더 크게!)
+        int newW = w * 3;
+        int newH = h * 3;
 
         BufferedImage scaled = new BufferedImage(newW, newH, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D g = scaled.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
         g.drawImage(img, 0, 0, newW, newH, null);
         g.dispose();
 
-        // 이진화 (threshold)
-        int threshold = 130;
+        // 적응형 이진화 (더 정교한 threshold)
+        int[][] pixels = new int[newH][newW];
+        long sum = 0;
+        
         for (int y = 0; y < newH; y++) {
             for (int x = 0; x < newW; x++) {
-                int pixel = scaled.getRGB(x, y) & 0xFF;
-                int bw = pixel < threshold ? 0 : 255;
+                pixels[y][x] = scaled.getRGB(x, y) & 0xFF;
+                sum += pixels[y][x];
+            }
+        }
+        
+        // 평균값 기반 threshold
+        int threshold = (int)(sum / (newW * newH)) - 20;
+        threshold = Math.max(80, Math.min(170, threshold));
+        
+        System.out.println("📊 Threshold: " + threshold);
+
+        for (int y = 0; y < newH; y++) {
+            for (int x = 0; x < newW; x++) {
+                int bw = pixels[y][x] < threshold ? 0 : 255;
                 scaled.setRGB(x, y, (bw << 16) | (bw << 8) | bw);
             }
         }
@@ -256,10 +272,11 @@ public class ocrServer {
             Tesseract t = new Tesseract();
             t.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
             t.setLanguage("eng");
-            t.setPageSegMode(6);  // 단일 블록
-            t.setOcrEngineMode(1);  // LSTM
-            t.setTessVariable("tessedit_char_whitelist", 
-                "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz.,$ ");
+            t.setPageSegMode(7);  // 한 줄 텍스트로 인식
+            t.setOcrEngineMode(1);
+            
+            // whitelist 제거하고 자유롭게 인식
+            // t.setTessVariable("tessedit_char_whitelist", "...");
 
             String result = t.doOCR(clean).trim();
             System.out.println("🔍 OCR Raw: " + result);

@@ -24,7 +24,7 @@ COPY . .
 RUN mkdir -p out && \
     javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
 
+EXPOSE 8080
 # Run
 CMD ["java", "-cp", "out:lib/*", "server.ocrServer"]
 
-EXPOSE 8080

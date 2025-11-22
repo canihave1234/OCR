@@ -105,7 +105,8 @@ public class ocrServer {
 
                 // Save image
                 byte[] imgBytes = Base64.getDecoder().decode(base64);
-                Path path = Paths.get("uploaded.png");
+               // Path path = Paths.get("uploaded.png");
+                Path path = Paths.get("/app/uploaded.png");
                 Files.write(path, imgBytes);
 
                 System.out.println("Saved: " + path.toAbsolutePath());
@@ -135,7 +136,8 @@ public class ocrServer {
     ======================================================================== */
 
     private static String getDbJson() throws Exception {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+      //  Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
         ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
 
         StringBuilder json = new StringBuilder("[");
@@ -233,7 +235,9 @@ public class ocrServer {
     /** Create & Insert SQLite */
     private static void saveToDB(String text, String memo) {
         try {
-            Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+            //Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+        	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
+
 
             // Re-create table always safely (id, text, memo, created_at)
             String createSQL =
@@ -264,7 +268,8 @@ public class ocrServer {
     }
 
     private static void deleteById(int id) throws Exception {
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+      //  Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
         PreparedStatement ps = conn.prepareStatement("DELETE FROM deposits WHERE id=?");
         ps.setInt(1, id);
         ps.executeUpdate();
@@ -275,7 +280,8 @@ public class ocrServer {
     /** Build DB view page */
     private static String buildDbPage() throws Exception {
 
-        Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+        //Connection conn = DriverManager.getConnection("jdbc:sqlite:data.db");
+    	Connection conn = DriverManager.getConnection("jdbc:sqlite:/app/data.db");
         ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
 
         StringBuilder html = new StringBuilder();

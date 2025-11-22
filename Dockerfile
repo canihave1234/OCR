@@ -25,10 +25,3 @@ RUN echo "=== 컴파일된 파일 ===" && find out -type f && ls -la out/
 CMD ["java", "-cp", "out:lib/*", "server.ocrServer"]
 
 EXPOSE 8080
-```
-
-이렇게 푸시하고 **Build Logs**에서 `=== 컴파일된 파일 ===` 아래에 뭐가 나오는지 확인해주세요.
-
-예상되는 정상 출력:
-```
-out/server/ocrServer.class

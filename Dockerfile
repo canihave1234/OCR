@@ -16,13 +16,18 @@ RUN curl -L -o lib/sqlite-jdbc.jar \
 
 COPY . .
 
+# 디버깅: 소스 파일 확인
+RUN echo "=== src 폴더 구조 ===" && find src -type f -name "*.java"
+RUN echo "=== ocrServer.java 첫 5줄 ===" && head -5 src/server/ocrServer.java || echo "파일 없음!"
+
 # 모든 Java 파일 컴파일
 RUN mkdir -p out && \
     find src -name "*.java" > sources.txt && \
+    cat sources.txt && \
     javac -encoding UTF-8 -cp "lib/*" -d out @sources.txt
 
-# 디버깅 (문제 해결 후 제거)
-RUN echo "=== 컴파일된 클래스 파일 ===" && find out -name "*.class"
+# 컴파일 결과 확인
+RUN echo "=== 컴파일된 클래스 ===" && find out -name "*.class"
 
 CMD ["java", "-cp", "out:lib/*", "server.ocrServer"]
 

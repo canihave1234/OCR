@@ -280,6 +280,7 @@ public class ocrServer {
 
     /** DB HTML Page */
     private static String buildDbPage() throws Exception {
+    	  System.out.println("🔥 buildDbPage() called !!!!");
         Connection conn = DriverManager.getConnection("jdbc:sqlite:" + getDbPath());
         ResultSet rs = conn.createStatement().executeQuery("SELECT * FROM deposits ORDER BY id DESC");
 

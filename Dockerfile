@@ -19,7 +19,10 @@ COPY . .
 RUN mkdir -p out && \
     javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
 
-# shell form으로 변경 (glob 패턴이 제대로 확장되도록)
-CMD java -cp "out:lib/*" server.ocrServer
+# 시작 스크립트 생성
+RUN echo '#!/bin/bash\njava -cp "out:lib/tess4j.jar:lib/sqlite-jdbc.jar" server.ocrServer' > start.sh && \
+    chmod +x start.sh
+
+CMD ["./start.sh"]
 
 EXPOSE 8080

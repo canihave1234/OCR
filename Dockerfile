@@ -16,11 +16,15 @@ RUN curl -L -o lib/sqlite-jdbc.jar \
 
 COPY . .
 
-RUN mkdir -p out && \
-    javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
+# 소스 파일 내용 확인
+RUN echo "=== 소스 파일 첫 10줄 ===" && head -10 src/server/ocrServer.java
 
-# 이 줄 추가: 컴파일 결과 확인
-RUN echo "=== 컴파일된 파일 ===" && find out -type f && ls -la out/
+# 컴파일 (verbose 모드)
+RUN mkdir -p out && \
+    javac -verbose -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java 2>&1 | tail -20
+
+# 결과 확인
+RUN echo "=== out 폴더 전체 ===" && ls -laR out/
 
 CMD ["java", "-cp", "out:lib/*", "server.ocrServer"]
 

@@ -1,27 +1,25 @@
-FROM ubuntu:22.04
+FROM openjdk:17-slim
 
-# ========== Install Java + OCR engine ==========
 RUN apt-get update && \
-    apt-get install -y openjdk-17-jdk tesseract-ocr libtesseract-dev wget unzip && \
+    apt-get install -y tesseract-ocr libtesseract-dev curl && \
     apt-get clean
 
 WORKDIR /app
 
-# ========== Download Tess4J ==========
-RUN wget https://repo1.maven.org/maven2/net/sourceforge/tess4j/tess4j/5.4.0/tess4j-5.4.0.zip && \
-    unzip tess4j-5.4.0.zip && \
-    mv tess4j-5.4.0/lib ./lib && \
-    rm -rf tess4j-5.4.0.zip tess4j-5.4.0
+# Tess4J + SQLite JDBC 다운로드
+RUN mkdir -p lib && \
+    curl -L -o lib/tess4j.jar https://repo1.maven.org/maven2/net/sourceforge/tess4j/tess4j/5.10.0/tess4j-5.10.0.jar && \
+    curl -L -o lib/sqlite-jdbc.jar https://repo1.maven.org/maven2/org/xerial/sqlite-jdbc/3.45.1.0/sqlite-jdbc-3.45.1.0.jar
 
-# ========== Copy source ==========
-COPY src ./src
-COPY camera.html .
+# 프로젝트 복사
+COPY . .
 
-RUN mkdir -p out
+# 컴파일
+RUN javac -encoding UTF-8 \
+    -cp "lib/tess4j.jar:lib/sqlite-jdbc.jar" \
+    -d out src/server/ocrServer.java
 
-# ========== Compile ==========
-RUN javac -encoding UTF-8 -cp "lib/*" -d out src/server/ocrServer.java
+# 실행
+CMD ["java", "-cp", "out:lib/tess4j.jar:lib/sqlite-jdbc.jar", "server.ocrServer"]
 
 EXPOSE 8080
-
-CMD ["bash", "-c", "java -cp 'out:lib/*' server.ocrServer"]

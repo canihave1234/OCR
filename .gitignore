@@ -1,0 +1,7 @@
+*.db
+*.png
+*.jpg
+uploaded.png
+tessdata/
+lib/
+*.jar

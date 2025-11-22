@@ -259,7 +259,7 @@
 				  })
 				  .then(r=>r.json())
 				  .then(data=>{
-				    alert("✔ Deposit Processed!\nRecognized: " + data.result);
+				    alert("Deposit Processed!\nRecognized: " + data.result);
 				    window.location.href="/success";
 				  })
 				  .catch(err => alert("Upload failed: " + err));

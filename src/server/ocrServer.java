@@ -86,10 +86,10 @@ public class ocrServer {
         // /uploadBase64
         server.createContext("/uploadBase64", exchange -> {
             if ("POST".equals(exchange.getRequestMethod())) {
-                System.out.println("📥 Received upload");
+                System.out.println("Received upload");
 
                 String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-                System.out.println("📦 Body length: " + body.length());
+                System.out.println("Body length: " + body.length());
 
                 String base64 = extract(body, "image")
                         .replace("data:image/png;base64,", "")
@@ -97,10 +97,10 @@ public class ocrServer {
                         .trim();
 
                 String memo = extract(body, "memo");
-                System.out.println("📝 Memo: " + memo);
+                System.out.println("Memo: " + memo);
 
                 if (base64.isEmpty()) {
-                    System.out.println("❌ No image data!");
+                    System.out.println("No image data!");
                     String err = "{\"error\":\"No image\"}";
                     exchange.sendResponseHeaders(400, err.length());
                     exchange.getResponseBody().write(err.getBytes());
@@ -111,16 +111,16 @@ public class ocrServer {
                 byte[] imgBytes = Base64.getDecoder().decode(base64);
                 Path rawPath = Paths.get("/app/uploaded.png");
                 Files.write(rawPath, imgBytes);
-                System.out.println("📸 Saved image: " + imgBytes.length + " bytes");
+                System.out.println("Saved image: " + imgBytes.length + " bytes");
 
                 String result = runOCR(rawPath.toFile());
-                System.out.println("🔍 OCR RESULT = " + result);
+                System.out.println("OCR RESULT = " + result);
 
                 try {
                     saveToDB(result, memo);
-                    System.out.println("✅ Saved to DB!");
+                    System.out.println("Saved to DB!");
                 } catch (Exception e) {
-                    System.out.println("❌ DB Save failed!");
+                    System.out.println("DB Save failed!");
                     e.printStackTrace();
                 }
 
@@ -133,7 +133,7 @@ public class ocrServer {
         });
 
         server.start();
-        System.out.println("🚀 Server running on port " + port);
+        System.out.println("Server running on port " + port);
     }
 
     // ============================================================
@@ -161,7 +161,7 @@ public class ocrServer {
                 "created_at DATETIME DEFAULT CURRENT_TIMESTAMP);"
             );
             conn.close();
-            System.out.println("✅ DB Ready!");
+            System.out.println("DB Ready!");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -176,7 +176,7 @@ public class ocrServer {
                 start = json.indexOf(key);
             }
             if (start == -1) {
-                System.out.println("⚠ Field not found: " + field);
+                System.out.println("Field not found: " + field);
                 return "";
             }
             start += key.length();
@@ -216,14 +216,13 @@ public class ocrServer {
         return json.toString();
     }
 
-    /** 이미지 전처리 - 개선 버전 */
-    /** 이미지 전처리 - 강화 버전 */
+
     private static File preprocessImage(File input) throws Exception {
         BufferedImage img = ImageIO.read(input);
         int w = img.getWidth();
         int h = img.getHeight();
 
-        // 3배 확대
+      
         int newW = w * 3;
         int newH = h * 3;
 
@@ -234,7 +233,7 @@ public class ocrServer {
         g.drawImage(img, 0, 0, newW, newH, null);
         g.dispose();
 
-        // 평균값 기반 적응형 threshold
+ 
         long sum = 0;
         for (int y = 0; y < newH; y++) {
             for (int x = 0; x < newW; x++) {
@@ -243,9 +242,9 @@ public class ocrServer {
         }
         int avg = (int)(sum / (newW * newH));
         int threshold = Math.max(90, Math.min(160, avg - 10));
-        System.out.println("📊 Avg brightness: " + avg + ", Threshold: " + threshold);
+        System.out.println("Avg brightness: " + avg + ", Threshold: " + threshold);
 
-        // 이진화
+   
         for (int y = 0; y < newH; y++) {
             for (int x = 0; x < newW; x++) {
                 int pixel = scaled.getRGB(x, y) & 0xFF;
@@ -268,18 +267,18 @@ public class ocrServer {
             Tesseract t = new Tesseract();
             t.setDatapath("/usr/share/tesseract-ocr/5/tessdata/");
             t.setLanguage("eng");
-            t.setPageSegMode(7);  // 한 줄 텍스트로 인식
+            t.setPageSegMode(7); 
             t.setOcrEngineMode(1);
             
-            // whitelist 제거하고 자유롭게 인식
+            // remove whitelist
             // t.setTessVariable("tessedit_char_whitelist", "...");
 
             String result = t.doOCR(clean).trim();
-            System.out.println("🔍 OCR Raw: " + result);
+            System.out.println("OCR Raw: " + result);
             return result;
 
         } catch (Exception e) {
-            System.out.println("⚠ OCR ERROR");
+            System.out.println("OCR ERROR");
             e.printStackTrace();
             return "OCR_ERROR";
         }
@@ -317,7 +316,7 @@ public class ocrServer {
         html.append("h2{text-align:center;color:#006644;}");
         html.append("a.delete{color:red;text-decoration:none;font-weight:bold;}");
         html.append("</style></head><body>");
-        html.append("<h2>📄OCR Deposit Records</h2>");
+        html.append("<h2>OCR Deposit Records</h2>");
         html.append("<table><tr><th>ID</th><th>OCR</th><th>Memo</th><th>Time</th><th>Del</th></tr>");
 
         while (rs.next()) {

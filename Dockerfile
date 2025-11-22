@@ -8,7 +8,7 @@ WORKDIR /app
 
 RUN mkdir -p lib
 
-# Tess4J + 의존성들
+# Tess4J + a
 RUN curl -L -o lib/tess4j.jar \
     https://repo1.maven.org/maven2/net/sourceforge/tess4j/tess4j/5.4.0/tess4j-5.4.0.jar
 

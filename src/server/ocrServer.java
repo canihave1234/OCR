@@ -145,33 +145,45 @@ public class ocrServer {
     // ============================================================
 
     private static String getDbPath() {
-        return "/app/data.db"; // Railway 고정 경로
+        // 도커나 Railway가 설정한 APP_HOME 이 있을 수도 있음
+        String base = System.getenv().getOrDefault("APP_HOME", "/app");
+
+        File dir = new File(base);
+        if (!dir.exists()) {
+            dir.mkdirs();  // 디렉토리 자동 생성
+        }
+
+        return base + "/data.db";
     }
+
 
     /** DB 자동 생성 */
     private static void initDb() {
         try {
             String dbPath = getDbPath();
-            File dbFile = new File(dbPath);
+            System.out.println("Creating DB file: " + dbPath);
 
-            if (!dbFile.exists()) {
-                System.out.println("📦 Creating DB file: " + dbPath);
-                Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
-                conn.createStatement().execute(
-                        "CREATE TABLE IF NOT EXISTS deposits (" +
-                                "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                                "text TEXT," +
-                                "memo TEXT," +
-                                "created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
-                );
-                conn.close();
-            }
+            Connection conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+
+            String createSQL =
+                    "CREATE TABLE IF NOT EXISTS deposits (" +
+                            "id INTEGER PRIMARY KEY AUTOINCREMENT," +
+                            "text TEXT," +
+                            "memo TEXT," +
+                            "created_at DATETIME DEFAULT CURRENT_TIMESTAMP" +
+                            ");";
+
+            conn.createStatement().execute(createSQL);
+            conn.close();
+
+            System.out.println("DB Ready!");
 
         } catch (Exception e) {
-            System.out.println("❌ DB init error");
             e.printStackTrace();
+            System.out.println("DB init error");
         }
     }
+
 
     /** JSON field extract */
     private static String extract(String json, String field) {

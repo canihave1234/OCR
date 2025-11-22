@@ -14,9 +14,11 @@ COPY . .
 
 ENV CLASSPATH=/app/lib/sqlite-jdbc.jar:/app/lib/tess4j.jar:out:.
 
-RUN javac -encoding UTF-8 \
-    -cp "lib/tess4j.jar:lib/sqlite-jdbc.jar" \
-    -d out $(find src -name "*.java")
+RUN mkdir -p out/server && \
+    javac -encoding UTF-8 \
+      -cp "lib/tess4j.jar:lib/sqlite-jdbc.jar" \
+      -d out $(find src -name "*.java") && \
+    mv out/ocrServer.class out/server/ocrServer.class || true
 
 
 CMD ["java", "-cp", "out:lib/tess4j.jar:lib/sqlite-jdbc.jar", "server.ocrServer"]

@@ -111,6 +111,7 @@ This project focuses on engineering and system design concepts,
 not banking-grade security.
 
 ## Project Structure
+```text
 OCR/
 ├── camera.html          # Main UI (mobile-style capture)
 ├── Dockerfile           # Deployment configuration

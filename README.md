@@ -76,12 +76,14 @@ Users can capture a cheque image using their device camera, extract text via OCR
 
 ---
 
-##  Docker Build & Run
-
-```bash
+🔁 Docker Build & Run
 docker build -t ocr-app .
 docker run -p 8080:8080 ocr-app
 
+
+Then open:
+
+http://localhost:8080
 
 ## Key Learning Points
 
@@ -105,19 +107,17 @@ Camera focus
 
 Cheque alignment
 
-This project focuses on engineering and system design concepts, not banking-grade security.
+This project focuses on engineering and system design concepts,
+not banking-grade security.
 
-
----
-
-##  Project Structure
-
-``` OCR/
-├── camera.html # Main UI (mobile-style capture)
-├── Dockerfile # Deployment configuration
+## Project Structure
+OCR/
+├── camera.html          # Main UI (mobile-style capture)
+├── Dockerfile           # Deployment configuration
 ├── src/
-│ └── server/
-│ └── ocrServer.java # Main Java server
-├── lib/ # External JARs (tess4j, sqlite-jdbc)
-├── data.db # SQLite DB (auto-generated) ```
+│   └── server/
+│       └── ocrServer.java  # Main Java server
+├── lib/                 # External JARs (tess4j, sqlite-jdbc)
+├── data.db              # SQLite DB (auto-generated)
+
 

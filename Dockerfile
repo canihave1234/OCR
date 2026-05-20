@@ -1,7 +1,7 @@
 FROM eclipse-temurin:17-jdk
 
 RUN apt-get update && \
-   apt-get install -y --no-install-recommends tesseract-ocr curl unzip
+    apt-get install -y --no-install-recommends tesseract-ocr curl unzip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
@@ -9,7 +9,7 @@ WORKDIR /app
 
 RUN mkdir -p lib
 
-# Tess4J + a
+# Tess4J
 RUN curl -L -o lib/tess4j.jar \
     https://repo1.maven.org/maven2/net/sourceforge/tess4j/tess4j/5.4.0/tess4j-5.4.0.jar
 

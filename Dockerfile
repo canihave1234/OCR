@@ -1,8 +1,7 @@
 FROM eclipse-temurin:17-jdk
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-      tesseract-ocr libtesseract-dev curl unzip && \
+   apt-get install -y --no-install-recommends tesseract-ocr curl unzip
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
 
